@@ -1,0 +1,132 @@
+How many meteors are spotted from each contient
+How many 
+
+```{r}
+library(tidyverse)
+meteorFile <- read_delim("Data/Meteorite_Landings.csv.zip")
+worldPopulation <- read_delim("Data/continent-populations.csv")
+
+# display data
+meteorFile
+
+# New row to add
+new_row <- data.frame(
+  continent = "Antarctica",
+  population = NA,
+  density = NA,
+  worldPop = NA
+)
+
+# Add the new row
+worldPopulation <- bind_rows(worldPopulation, new_row)
+worldPopulation
+```
+
+### Clean the data pick only the data i need.
+```{r}
+# select only continent and population
+worldPopulation <- worldPopulation %>% 
+  select(continent, population)
+
+# rename columns then filter out columns
+meteorData <- meteorFile %>% 
+  filter(!is.na(GeoLocation)) %>% 
+  select(id, year, name, fall, reclat, reclong)
+
+names(meteorData) <- c("id", "year", "name", "fall", "lat", "long")
+
+# create new categorial variable, which contitent
+meteorData <- meteorData %>%
+  mutate(
+    in_north_america = between(lat, 10, 90) & between(long, -170, -15),
+    in_south_america = between(lat, -56, 14) & between(long, -78, -35),
+    in_europe = between(lat, 36, 72) & between(long, -32, 42),
+    in_asia = between(lat, -12, 75) & between(long, 28, 180),
+    in_africa = between(lat, -35, 38) & between(long, -27, 51),
+    in_antarctica = between(lat, -90, -60) & between(long, -180, 180),
+    in_oceania = between(lat, -50, 0) & between(long, 110, 180),
+    continent = case_when(
+      in_north_america ~ "North America",
+      in_south_america ~ "South America",
+      in_europe ~ "Europe",
+      in_asia ~ "Asia",
+      in_africa ~ "Africa",
+      in_antarctica ~ "Antarctica",
+      in_oceania ~ "Oceania",
+      TRUE ~ "Unknown"  # Add any additional conditions or default as needed
+    )
+  ) %>%
+  select(year, name, fall, lat, long, continent)
+
+
+# Count the number of meteors on each continent creates numarical variable
+meteorCountsByContinent <- meteorData %>%
+  group_by(continent) %>%
+  summarise(meteor_count = n())
+
+# Merge the meteor counts with the original data frame
+meteorDataWithCounts <- left_join(meteorData, meteorCountsByContinent, by = "continent")
+
+# merge with contient population
+meteorDataWithCounts <- right_join(meteorDataWithCounts, worldPopulation, by = "continent")
+
+meteorDataWithCounts
+
+# summarized data frame 1
+meteorCountsByContinent <- meteorDataWithCounts %>% 
+  select(continent, meteor_count) %>% 
+  distinct() %>% 
+  group_by(continent) 
+meteorCountsByContinent
+
+# Assuming your data frame is named meteor_data
+meteorFallOrFound <- meteorDataWithCounts %>%
+  group_by(continent, fall) %>%
+  summarise(meteor_count = n())
+
+# Print or further process the resulting data frame
+meteorFallOrFound
+```
+### plotting
+```{r}
+# bar plot for number of meteors from each contienet
+meteorCountsByContinent %>% 
+ggplot(aes(x = continent, y = meteor_count)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Number of Meteor observation per Continent",
+       x = "Continent",
+       y = "Meteor Count")
+```
+```{r}
+meteorFallOrFound %>% 
+ggplot(aes(x = continent, y = meteor_count, fill = fall)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Meteor Counts by Continent and Fall Status",
+       x = "Continent",
+       y = "Meteor Count",
+       fill = "Fall Status") +
+  scale_fill_manual(values = c("Fell" = "blue", "Found" = "green"))
+```
+
+### Data Documentation
+I got my data from these two websties.https://www.kaggle.com/datasets/anoopjohny/meteorite-landings  was the webstie that provided us with our meteor data. Then https://worldpopulationreview.com/ gave me the world population data for all the different contients which I used to merge with the meteor data. 
+
+The meteorDataWithCounts data frame contains 8 variables. Year represents the year the meteor was spotted or found. Name is for the name of the meteor. fall determines if a meteor was seen in the sky or found in the ground. Lat represents the latitude of the meteor. Long represents the longitude of the meteor. Continent represents the continent the meteor was found or seen from. Meteor_count represents the count meteor count for each continent. Population represents the number of people on the continent.
+
+There should be no missing continent data but we have an unknown option if the coordinates do not match any continent.This could be meteors over the ocean but our data set doesn't have any currently. Furthermore we filtered out any missing long/lat coordinates before our final data set to ensure each meteor has a location. Someone should be able to use this data frame to determine where is the best spot to find meteors and how likely one is to see a meteor. The best way to filter by Unknown as that will give the meteors that fell outside of a continents bounds.
+
+### Intro
+One question we wanted to answer was where it is most likely to see a meteor. We want to help scientists determine where they should establish scientific observation posts. This data set will help scientists determine the best place to set up observation posts. Furthermore, this data can be used to help scientists determine where to look for meteors that have landed on the earth. Since we have the fall category which informs us if the meteor landed on Earth or not. They can use this data to determine where to set up sky observation posts or where to send out groups to look for meteors. This is because scientists might want to find meteor samples to perform tests on the material. This material can only be found when it landed on Earth. Counting by continent is better for this observation because scientists need high level data to determine where to spend their resources. This data is intended for scientific organizations and their leaders. The leaders will use this information to determine where they should send their resources. But if a continent has low infrastructure, then they might not want to conduct their experiments and observations there. This is because it could be too costly for them. These leaders need high level information to determine whether a continent is suitable for further investigation and experimentation. Scientists will need to factor in the costs for setting up observation posts and the costs of conducting their experiments. They need to determine where they can spend their money most effectively and a high-level overview of each continent will help them find their location. Finally we also want to allow scentists to know how many people live on each continent. They can use these people to help develop their infasturcture. They can also use this information to know how population can impact meteor observations. They can also sample the population to help them find meteor obsverations. Population can help scentists determine their probability of finding support for their observation posts.
+
+### Explain Data
+For the question about where it's most likely to see a meteor the data set came from two websites and these websites are https://www.kaggle.com/datasets/anoopjohny/meteorite-landings and https://worldpopulationreview.com/. We used these data sets for this question as it provided us with information about meteor observations throughout the world and the continents and their population respectively. This information could be crucial for scientists to determine how much support they might have if they decide to set up their observation posts on a continent. The meteor data is gathered worldwide by scientists. The US government supports this data set by endorsing it and providing it with funding to help scientists find meteors. The world population data set is handled by the creator of the website. We believe they use the publicly available data published by the UN or other world data organizations. Then they break up the world by continent and then calculate the sum from there. They have many data sets but the one we used to be for the overall world population divided by continent. The data permission for both data sets is free use. The world population website is intended for free use. They've made the data easy to access and we can access any aspect of their data sets. These data sets are intended for scientists and the general population. This is because scientists should use this data to find meteors and to record them. While they might use the world population data set to determine how many people are affected by meteors. The general population might access either of these data sets out of curiosity and a desire to learn more. Some data quality issues we found were that the meteor didn't always fall within a continent. This is because they were seen over an ocean. This means that the meteor wasn't seen over land. We had to account for these meteors, and we made an unknown column for that. Also Antarctica has no permanent population so the population tab for this row will be left as NA. But it's important to include Antarctica since it is a valid land mass where scientists can set up observation posts for a specific season. The final data frame contains 16,297 rows and 8 columns. Each row represents a single meteor observation in the world. Year represents the year the meteor was spotted or found. Name is for the name of the meteor. fall determines if a meteor was seen in the sky or found in the ground. Lat represents the latitude of the meteor. Long represents the longitude of the meteor. Continent represents the continent the meteor was found or seen from. Meteor count represents the count meteor count for each continent. Population represents the number of people on the continent. 
+
+### Discuss methods
+For the question about meteors per continent We decided to include those 8 variables because these variables would be useful for a scientist to use. They would likely need to know the year to track the frequency of meteor observations. They need the name to identify each meteor. They will need the fall variable to determine if it was found on earth or not. Then the lat and long variables are helpful for them to pinpoint where the meteor was observed. The continent will represent where on the Earth it was observed. Metoer_count represents the number of meteors observed on a continent. Finally, the population is tied to the continent variable as it can help scientists determine the likely hood of people observing meteors and how much support a continent might have for scientific observations. We selected these data sets as we felt like these were the most relevant and accurate data sets for this question. To process the data, we had to add a new column for the continent that a meteor was found on. This was done by checking the bounds of the meteors lat and long observation. Then we assigned each meteor a continent. Then we also added several meteor count variables for each continent so that a scientist will know how many meteors landed on one continent. Something we had to consider here was how to account for meteors observed outside on the ocean. We decided to have an unknown variable which represents meteors not on any continent. It can be assumed these meteors landed either in the ocean or a different part of the world without a continent. We also had to filter out meteors with missing lat and long values as these would be invalid meteors for this question. A scientist would need to know where a meteor impacted or was observed for this data set to be effective. We also had to add Antarctica to the population data set to ensure an accurate merging of data sets. 
+
+### Result
+{{ `fallFoundPic.png` }} {{`countpic.png`}}
+The result for this question shows that most meteor sightings were found on planet Earth. This tells us that most meteors will be found on the ground and that where scientists should focus their efforts. This will yield them the most meteorite material and observations. We also have learned that Antarctica is the place to search for meteors. If scientists needs to find more meteorite samples, then they should investigate Antarctica further.This could be because Antarctic preserves it's landscape due to the cold. It freezes anything in place so meteors aren't lost to erosion. There's also very few humans resulting in less tampering for the meteors. We also learn if scientists want to observe meteors falling in the sky. They should focus their efforts in Asia as that the place with the most falling observations. This could be due to the vast forest of Asia resulting in more potential sightings.
+
+### Discuss
+For this question about where to find meteors, it answers the question of where to look for meteors. This will help scientists determine where to look for fallen or falling meteors. This data set can greatly help scientists determine where to focus their efforts when searching for meteors. But one limitation of this data is the lack of specific geographic data. We do have the latitude and longitude of each meteor but it is not sorted by which country they landed in. This will hinder scientists from knowing where to exactly start. However, our data gives scientist an idea of the general area to investigate for meteors. Further work that could be done for this data set is to map each meteor to a specific country of sub region of the world. This will greatly help scientists determine the specific locations to establish research stations for meteor sightings. This will likely require more advance code as we need to be able to map a specific x and y point to a real life x and y point and map it to the cloest country.
