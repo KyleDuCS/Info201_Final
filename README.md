@@ -6,4 +6,4 @@ Some key takeaways from this project are that Antarctica and Africa are the most
 
 ![fallFoundPic](https://github.com/KyleDuCS/Info201_Final/assets/121976937/e9687455-f14b-4395-8503-eef3f0d537bc)
 
-
+![fallFoundPic](https://github.com/KyleDuCS/Info201_Final/blob/main/MeteorFoundNA.png)
