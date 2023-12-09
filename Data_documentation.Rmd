@@ -5,7 +5,8 @@ The meteor data has been verified by scientists at NASA. They worked to ensure t
 were valid and not fake meteor samples. Then we got our second data frame from a friend at UW. They
 used a CSV file of the continents, and it contained their geo-location within the file. They gathered
 this data on their own as this was an assignment for their RSO project. But my friend does not remember
-how he gathered this data or who he got it from. So, this has an unknown original data collector.
+how he gathered this data or who he got it from. So, this has an unknown original data collector. This 
+file contained the continent name and size.
 
 Question 1: The Meteorites data frame has two variables year and impacts. Year is the year that a
 meteor has been observed on Earth. While impact is the number of impacts or observations seen that
